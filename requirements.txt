@@ -1,0 +1,22 @@
+# Acesso ao catálogo e às imagens
+pystac-client>=0.8
+planetary-computer>=1.0
+odc-stac>=0.3.10
+dask>=2024.1
+
+# Ciência de dados / processamento
+numpy>=1.26
+scipy>=1.11
+pandas>=2.1
+xarray>=2024.1
+
+# Geometria e geografia
+shapely>=2.0
+pyproj>=3.6
+rasterio>=1.3
+
+# Imagens (PNG das máscaras)
+Pillow>=10.0
+
+# Web
+Flask>=3.0

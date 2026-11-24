@@ -1,0 +1,137 @@
+{
+ "Barragem Eustáquio": {
+  "limitacoes": [
+   {
+    "titulo": "Rejeito saturado aparece como água no radar",
+    "texto": "No painel de 27/07/2025 o S1 marcou como superfície escura quase todo o polígono, incluindo a praia cinza visível no RGB, enquanto o S2 marcou só o lago. Nas 37 datas com S2 confiável, a superfície escura S1 ficou em média 263 ha acima do lago S2. A polarização VH não separa as duas classes: mediana de −25,8 dB no lago e −25,6 dB na praia saturada (acurácia de 0,54 com o melhor limiar único, 0,5 = não separa)."
+   },
+   {
+    "titulo": "Limiar MNDWI fixo",
+    "texto": "O MNDWI do lago varia entre datas (mediana de 0,79 em 27/07/2025 e de 0,38 em 27/09/2026), provavelmente pela turbidez. O limiar 0,25 foi o que melhor reproduziu o lago visível nas 4 imagens RGB de referência (concordância média de 0,81), mas é um meio-termo. Com 0,20 e 0,30 a mediana do lago S2 passa de 553 ha para 568 ha e 516 ha."
+   },
+   {
+    "titulo": "Classe 'água' da SCL em lago turvo",
+    "texto": "Em 4 cenas limpas (30/09/2025, 02/10/2025, 10/10/2026 e 20/10/2026) a banda SCL classificou como água só 21–26% do núcleo de água do S2, contra uma mediana de 99%, embora o lago esteja visível no RGB e o MNDWI o detecte normalmente (81–100% do núcleo). Por isso o controle de qualidade exige as duas quedas juntas. Só 14/11/2025 foi reprovada: SCL 3% e MNDWI 56% do núcleo, com o lago S2 em 252 ha, contra 442–500 ha nas datas vizinhas."
+   },
+   {
+    "titulo": "Otsu sem o limite de segurança",
+    "texto": "Limiar de Otsu bruto do S1 entre abr/2025 e nov/2026: Eustáquio de −16,3 a −12,5 dB (mediana −15,0); Santo Antônio de −16,1 a −9,3 dB (mediana −13,5); lago oeste de −15,8 a −8,1 dB (mediana −13,7). Onde há pouca água o histograma não tem dois picos e o Otsu sobe até −8 dB, o que marcaria como água grandes áreas que não são. Por isso o limite de −20 a −15 dB é mantido."
+   },
+   {
+    "titulo": "Percentuais em áreas pequenas",
+    "texto": "Na Santo Antônio, o erro médio S1×S2 em % chegou a 13.959% porque as áreas S2 eram próximas de zero; no lago oeste, em 2025, oscilações em torno de 1 ha geravam variações de até +3.600% entre passagens. Desde 24/11/2026 a regra de variação usa hectares quando a área anterior é menor que 5 ha, e a validação é feita em hectares (em % só quando a área S2 passa de 5 ha)."
+   }
+  ],
+  "eventos": [
+   {
+    "titulo": "Redução da superfície de água em abr–mai/2026",
+    "texto": "A superfície escura S1 caiu de cerca de 840 ha (medianas mensais de jul/2025 a mar/2026) para 815 ha em abr/2026 e 750 ha em mai/2026, com anomalias em 20/04, 02/05 e 14/05/2026, e voltou a cerca de 820 ha em set–out/2026. O lago S2 (MNDWI > 0,25) teve medianas mensais de 440 ha em abr/2026 e 416 ha em mai/2026, contra 543 ha em fev/2026. Nas classes S1 + S2, a praia seca passou de 78–105 ha em 2025 para 145–199 ha entre abr e jul/2026."
+   },
+   {
+    "titulo": "Aumento da distância entre a superfície escura S1 e a crista (trecho reto norte)",
+    "texto": "Fora das passagens suspeitas de vento/chuva, a menor distância entre a superfície escura S1 e a crista reto norte teve mediana de 90 m em 2025 (28 a 130 m) e de 70 m em jan–mar/2026 (70 a 100 m). A partir de abr/2026 passou a 130 m em abr–jul/2026 (92 a 141 m) e 141 m em ago–nov/2026 (110 a 160 m). O início coincide com o aumento da praia seca nas classes S1 + S2 (de 78–105 ha em 2025 para 145–199 ha entre abr e jul/2026); a distância continuou alta depois de julho, quando a praia seca voltou a cerca de 120 ha. Precisão aproximada de ±20 m. Observação, não é avaliação de segurança."
+   }
+  ]
+ },
+ "Barragem Santo Antônio": {
+  "limitacoes": [
+   {
+    "titulo": "Praia seca lisa aparece escura no radar",
+    "texto": "No painel de 20/09/2026 o RGB não mostra água no polígono e o S2 mede 0,8 ha, mas o S1 marca manchas escuras, incluindo a praia branca seca junto à crista nordeste. Por isso a métrica de distância lago–crista é não interpretável nesta barragem, e a classe 'praia saturada' (escuro no S1 e não água no S2) pode incluir praia seca lisa: ela atinge o máximo em set–out, no fim da estação seca, nos dois anos (121 ha em 28/09/2025 e 85 ha em 12/10/2026)."
+   },
+   {
+    "titulo": "Otsu sem o limite de segurança",
+    "texto": "Limiar de Otsu bruto do S1 entre abr/2025 e nov/2026: Eustáquio de −16,3 a −12,5 dB (mediana −15,0); Santo Antônio de −16,1 a −9,3 dB (mediana −13,5); lago oeste de −15,8 a −8,1 dB (mediana −13,7). Onde há pouca água o histograma não tem dois picos e o Otsu sobe até −8 dB, o que marcaria como água grandes áreas que não são. Por isso o limite de −20 a −15 dB é mantido."
+   },
+   {
+    "titulo": "Percentuais em áreas pequenas",
+    "texto": "Na Santo Antônio, o erro médio S1×S2 em % chegou a 13.959% porque as áreas S2 eram próximas de zero; no lago oeste, em 2025, oscilações em torno de 1 ha geravam variações de até +3.600% entre passagens. Desde 24/11/2026 a regra de variação usa hectares quando a área anterior é menor que 5 ha, e a validação é feita em hectares (em % só quando a área S2 passa de 5 ha)."
+   }
+  ]
+ },
+ "Santo Antônio – lago oeste": {
+  "eventos": [
+   {
+    "titulo": "Enchimento do lago oeste (jan/2026)",
+    "texto": "Entre abr e dez/2025 a superfície de água S1 ficou entre 0 e 3 ha, e a imagem RGB de 02/07/2025 mostra a bacia sem lâmina d'água. A partir de 02/01/2026 a área subiu: 14,8 ha (02/01), 66,2 ha (26/01), 83,8 ha (19/02) e cerca de 110 ha a partir de mai/2026 (S1). O S2 registrou medianas mensais de 57 ha em jan/2026, 87 ha em fev/2026 e de 101 a 110 ha entre abr e out/2026."
+   }
+  ],
+  "limitacoes": [
+   {
+    "titulo": "Otsu sem o limite de segurança",
+    "texto": "Limiar de Otsu bruto do S1 entre abr/2025 e nov/2026: Eustáquio de −16,3 a −12,5 dB (mediana −15,0); Santo Antônio de −16,1 a −9,3 dB (mediana −13,5); lago oeste de −15,8 a −8,1 dB (mediana −13,7). Onde há pouca água o histograma não tem dois picos e o Otsu sobe até −8 dB, o que marcaria como água grandes áreas que não são. Por isso o limite de −20 a −15 dB é mantido."
+   },
+   {
+    "titulo": "Percentuais em áreas pequenas",
+    "texto": "Na Santo Antônio, o erro médio S1×S2 em % chegou a 13.959% porque as áreas S2 eram próximas de zero; no lago oeste, em 2025, oscilações em torno de 1 ha geravam variações de até +3.600% entre passagens. Desde 24/11/2026 a regra de variação usa hectares quando a área anterior é menor que 5 ha, e a validação é feita em hectares (em % só quando a área S2 passa de 5 ha)."
+   }
+  ]
+ },
+ "metodologia": {
+  "paragrafos": [
+   "Sentinel-1 RTC (Microsoft Planetary Computer), uma única órbita por estrutura, pixel de 10 m. O VV passa pelo filtro de speckle de Lee 7×7 (em escala linear) e é convertido para dB. A água é o que fica abaixo do limiar de Otsu, preso entre −20 e −15 dB, seguido de limpeza morfológica (janela 3×3 em cruz). Todas as áreas são calculadas só dentro do polígono da estrutura; o limiar de Otsu usa o polígono mais uma margem de 500 m, para que o histograma tenha água e terra.",
+   "Sentinel-2 L2A: MNDWI = (B03 − B11) / (B03 + B11), com máscara de nuvem e sombra pela banda SCL. Datas com mais de 2% de nuvem ou sombra dentro do polígono são marcadas como não confiáveis."
+  ],
+  "sensibilidade_limiar": {
+   "titulo": "Sensibilidade do limiar S1 (Lagoa da Pampulha, 2023–2025)",
+   "descricao": "Diagnóstico feito antes do cadastro das barragens de Paracatu, na lagoa usada como teste. Viés e erro do lago S1 em relação ao lago S2 nas 41 datas com S2 confiável (S1 a até 6 dias). O NDWI (B03/B08, 10 m) foi usado como segunda referência, para descartar um efeito da banda SWIR de 20 m.",
+   "colunas": [
+    "Variante S1",
+    "Viés vs MNDWI",
+    "Erro vs MNDWI",
+    "Viés vs NDWI 10 m",
+    "Erro vs NDWI 10 m",
+    "Lago S1 (mediana)"
+   ],
+   "linhas": [
+    [
+     "Lee 7×7, limiar −15 dB (em uso)",
+     "−3,7%",
+     "3,7%",
+     "−4,3%",
+     "4,3%",
+     "172,4 ha"
+    ],
+    [
+     "Lee 7×7, limiar −16 dB",
+     "−7,5%",
+     "7,5%",
+     "−8,1%",
+     "8,1%",
+     "166,2 ha"
+    ],
+    [
+     "Lee 7×7, limiar −14 dB",
+     "−0,5%",
+     "1,9%",
+     "−1,2%",
+     "1,4%",
+     "177,9 ha"
+    ],
+    [
+     "Sem filtro de Lee (Otsu limitado)",
+     "−1,3%",
+     "2,2%",
+     "−2,0%",
+     "2,0%",
+     "176,6 ha"
+    ]
+   ],
+   "conclusao": [
+    "As duas referências S2 concordam entre si (mediana de 177,8 ha com MNDWI e 179,8 ha com NDWI), então o viés vem do limiar do S1. Cada 1 dB a mais acrescenta cerca de 6 ha ao lago da Pampulha.",
+    "Mantivemos −15 dB por quatro motivos. (1) O intervalo de −20 a −15 dB foi definido antes do teste; −14 dB fica fora dele, e o ajuste foi medido numa lagoa urbana só. (2) Nas barragens de rejeito o erro dominante é o oposto: rejeito saturado e praia seca lisa já aparecem como água (ver Limitações demonstradas); um limiar mais frouxo aumentaria esse erro. (3) Sem o filtro de Lee o viés cai, mas o ruído cresce: no teste com imagem simulada, a máscara antes da limpeza passa de 0 para cerca de 170 pixels de água falsa. (4) O viés de −3,7% é estável entre as datas, então não atrapalha a detecção de variações, que é o objetivo do monitoramento."
+   ]
+  }
+ },
+ "anotacoes_eventos": {
+  "Barragem Eustáquio": {
+   "2026-08-18": "Aumento do lago S2 (509,5 → 553,0 ha): recuperação após o mínimo de abr–jul/2026 (medianas mensais de 416–486 ha). Cena limpa, máscara S2 acompanha o lago visível no RGB (docs/paineis/eustaquio_2026-08-18_alerta_aumento.png)."
+  },
+  "Barragem Santo Antônio": {
+   "2026-05-18": "Evento principal: desaparecimento da poça do canto sudeste, junto ao fim da crista nordeste. Visível no S1 e no S2 em 18/05/2026 e ausente nos dois em 07/06/2026; desde então a água no polígono fica abaixo de 1 ha (docs/paineis/santo-antonio_2026-05-18_antes_do_evento.png e santo-antonio_2026-06-07_alerta_reducao.png)."
+  },
+  "Santo Antônio – lago oeste": {
+   "2026-01-02": "Enchimento do lago oeste (ver Eventos observados)."
+  }
+ }
+}

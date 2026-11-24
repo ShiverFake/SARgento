@@ -1,0 +1,121 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "nome": "Barragem Eustáquio",
+    "trecho": "reto norte",
+    "descricao": "borda de montante da crista"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -46.91224728318035,
+      -17.14502955460696
+     ],
+     [
+      -46.901917346248894,
+      -17.145759511010993
+     ],
+     [
+      -46.89267065716811,
+      -17.146749861717552
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "nome": "Barragem Eustáquio",
+    "trecho": "dique noroeste",
+    "descricao": "borda de montante da crista"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -46.92480533064855,
+      -17.15078319315195
+     ],
+     [
+      -46.92413591154595,
+      -17.14966017313035
+     ],
+     [
+      -46.92271754806584,
+      -17.14881533423386
+     ],
+     [
+      -46.92083353940362,
+      -17.148381495146886
+     ],
+     [
+      -46.91872227551203,
+      -17.148695200020377
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "nome": "Barragem Santo Antônio",
+    "trecho": "nordeste",
+    "descricao": "borda de montante da crista",
+    "interpretavel": false,
+    "nota": "não interpretável (praia seca lisa aparece escura no radar)"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -46.86308583039379,
+      -17.139163971386825
+     ],
+     [
+      -46.855875209578,
+      -17.146458682801022
+     ],
+     [
+      -46.84938226196002,
+      -17.155101936186202
+     ],
+     [
+      -46.848647005159734,
+      -17.161523869210104
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "nome": "Barragem Santo Antônio",
+    "trecho": "norte",
+    "descricao": "borda de montante da crista",
+    "interpretavel": false,
+    "nota": "não interpretável (praia seca lisa aparece escura no radar)"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -46.877178016489786,
+      -17.13876253567463
+     ],
+     [
+      -46.870364598305116,
+      -17.138735337671655
+     ],
+     [
+      -46.86308583039379,
+      -17.139163971386825
+     ]
+    ]
+   }
+  }
+ ]
+}

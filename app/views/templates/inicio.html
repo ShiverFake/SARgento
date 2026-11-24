@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+{% endblock %}
+
+{% block conteudo %}
+  <section class="intro" aria-labelledby="titulo-inicio">
+    <div>
+      <h1 id="titulo-inicio">SARgento</h1>
+      <p class="subtitulo">Monitoramento de barragens de rejeito por radar</p>
+      <p>A cada passagem do satélite Sentinel-1, de 12 em 12 dias, o SARgento mede dentro de cada
+        reservatório a superfície que o radar vê escura: água e rejeito saturado. O radar enxerga através
+        das nuvens; as imagens ópticas do Sentinel-2 separam o lago da praia nas datas limpas e servem de
+        validação.</p>
+      <p>As séries geram alertas quando a área muda além do ruído da medição, e cada alerta pode ser
+        conferido no mapa, nos gráficos e no relatório da estrutura.</p>
+      <div class="intro-acoes">
+        <a class="botao" href="{{ url_for('web.mapa') }}">Abrir o monitoramento</a>
+        <a class="botao secundario" href="{{ url_for('web.metodo') }}">Ler sobre o método</a>
+      </div>
+    </div>
+    <div class="aviso forte" role="note">
+      <strong>Projeto acadêmico (ADS – UNIFADESA)</strong>
+      <p>Não é monitoramento oficial nem avaliação de segurança. A situação oficial das barragens está no
+        <a href="https://app.anm.gov.br/SIGBM/Publico/GerenciarPublico" rel="noopener" target="_blank">SIGBM/ANM</a>.</p>
+      <p class="dica">Os números mostram o que os satélites registraram e os limites do método estão descritos em
+        "Sobre o método".</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="titulo-estruturas">
+    <div class="estruturas-titulo">
+      <h2 id="titulo-estruturas">Estruturas acompanhadas</h2>
+      <p class="dica">Clique num card para abrir o monitoramento da estrutura.</p>
+    </div>
+    <div class="estruturas">
+      {% for c in cards %}
+      <a class="card" href="{{ url_for('web.estrutura', slug=c.slug) }}">
+        <div class="card-mapa" data-geo='{{ c.geo }}' role="img" aria-label="Mapa de satélite de {{ c.nome }}"></div>
+        <div class="card-corpo">
+          <div class="card-cabeca">
+            {% if c.papel == 'controle' %}<span class="selo selo-controle">Controle</span>
+            {% else %}<span class="selo selo-monitorada">Monitorada</span>{% endif %}
+            <h3>{{ c.nome }}</h3>
+          </div>
+          {% if c.papel == 'controle' %}
+            <p class="card-nota">{{ c.observacao }}</p>
+          {% endif %}
+          <dl class="ficha">
+            <div><dt>Fonte dos alertas</dt><dd>{{ "S2 (lago)" if c.fonte_alertas == "S2" else "S1 (radar)" }}</dd></div>
+            <div><dt>Eventos observados</dt><dd>{{ c.n_eventos }}</dd></div>
+            <div><dt>Passagens S1</dt><dd>{{ c.n_passagens }}</dd></div>
+            <div><dt>Período</dt><dd>{{ c.periodo }}</dd></div>
+            {% if c.papel != 'controle' %}
+            <div><dt>CRI</dt><dd>{{ c.categoria_risco }}</dd></div>
+            <div><dt>DPA</dt><dd>{{ c.dano_potencial or "–" }}</dd></div>
+            {% endif %}
+          </dl>
+          <span class="card-acao">Abrir monitoramento</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/inicio.js') }}"></script>
+{% endblock %}

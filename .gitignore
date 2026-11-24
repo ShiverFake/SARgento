@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+data/monitor.db
+data/mascaras/
+data/rasters/
+data/referencias/
+.vercel/
+reports/*.html
+data/monitor.db.bak*
+*.bak
+.taste-skill/
+DEPLOY_VERCEL.md

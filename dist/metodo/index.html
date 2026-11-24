@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1366">
+  <title>Sobre o método – SARgento – Monitoramento de barragens de rejeito por radar</title>
+  <meta name="description" content="Dados, pipeline, validação, sensibilidade do limiar, limitações e créditos do SARgento.">
+  <meta name="theme-color" content="#14212b">
+  <meta property="og:title" content="SARgento – Monitoramento de barragens de rejeito por radar">
+  <meta property="og:description" content="Séries Sentinel-1 e Sentinel-2 de barragens de rejeito, com alertas, validação e limitações do método.">
+  <link rel="icon" href="../static/img/sargento.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../static/css/sargento.css">
+  
+  <!-- base: "/" no servidor; caminho relativo na vitrine estática (preenchido pelo build) -->
+  <script>window.SARGENTO = { base: "../", vitrine: true };</script>
+</head>
+<body class="" >
+  <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+  <header class="topo">
+    <a class="marca" href="../">
+      <img src="../static/img/sargento.svg" alt="" width="30" height="30">
+      <span class="marca-nome">SARgento</span>
+    </a>
+    <span class="marca-sub">Monitoramento de barragens de rejeito por radar</span>
+    <nav class="menu" aria-label="Principal">
+      <a href="../" >Início</a>
+      <a href="../mapa/" >Monitoramento</a>
+      <a href="../metodo/" aria-current="page">Sobre o método</a>
+    </nav>
+    
+    <span class="demo" title="Versão publicada sem servidor: nada é processado aqui.">Demonstração: dados congelados em 24/11/2026, sem processamento</span>
+    
+  </header>
+
+  <main id="conteudo" class="pagina">
+    
+
+
+<div class="metodo">
+  <nav class="indice" aria-label="Nesta página">
+    <h2>Nesta página</h2>
+    <ol>
+      <li><a href="#dados">Dados</a></li>
+      <li><a href="#pipeline">Pipeline</a></li>
+      <li><a href="#validacao">Validação</a></li>
+      <li><a href="#controle">Controle e rejeito</a></li>
+      <li><a href="#sensibilidade">Sensibilidade do limiar</a></li>
+      <li><a href="#limitacoes">Limitações demonstradas</a></li>
+      <li><a href="#cobertura">Lacuna de cobertura</a></li>
+      <li><a href="#creditos">Créditos e atribuições</a></li>
+    </ol>
+  </nav>
+
+  <article class="texto-metodo">
+    <h1>Sobre o método</h1>
+    <p class="lead">Como o SARgento transforma imagens de satélite em séries de área, alertas e eventos, o que
+      foi validado e onde o método falha.</p>
+
+    <section id="dados" aria-labelledby="h-dados">
+      <h2 id="h-dados">Dados</h2>
+      <table>
+        <thead><tr><th>Fonte</th><th>O que é</th><th>Como é usado</th></tr></thead>
+        <tbody>
+          <tr><td>Sentinel-1 RTC</td><td>Radar de abertura sintética (banda C), corrigido de terreno, pixel de 10 m, polarizações VV e VH; uma passagem a cada 12 dias por órbita</td>
+            <td>Série principal: superfície escura dentro do polígono. Uma única órbita por estrutura (descendente 126 em Paracatu, descendente 155 na Pampulha), para não misturar geometrias de visada</td></tr>
+          <tr><td>Sentinel-2 L2A</td><td>Imagem óptica com correção atmosférica, bandas de 10 e 20 m e classificação de cena (SCL)</td>
+            <td>Lago pelo índice MNDWI = (B03 − B11) / (B03 + B11); máscara de nuvem e sombra pela SCL; validação do S1 e classes da superfície</td></tr>
+          <tr><td>ANM – SIGBM</td><td>Cadastro público das barragens de mineração</td>
+            <td>Coordenadas da crista, categoria de risco (CRI) e dano potencial associado (DPA)</td></tr>
+          <tr><td>Polígonos e cristas</td><td>Desenhados sobre Sentinel-2 de 20/10/2026 e revisados manualmente</td>
+            <td>Lago + praia sem o maciço; a crista segue a borda de montante (faixa norte da Santo Antônio confirmada como maciço por perfis do Copernicus DEM)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="pipeline" aria-labelledby="h-pipeline">
+      <h2 id="h-pipeline">Pipeline</h2>
+      <ol class="etapas">
+        <li>Busca das cenas no Microsoft Planetary Computer (catálogo STAC) e leitura só do recorte do polígono com 500 m de margem.</li>
+        <li>Filtro de speckle de Lee 7×7 na escala linear e conversão para decibéis (dB).</li>
+        <li>Limiar de Otsu no VV, calculado no polígono mais a margem e preso entre −20 e −15 dB; o que fica abaixo é superfície escura.</li>
+        <li>Limpeza morfológica (janela 3×3 em cruz) e áreas em hectares, sempre só dentro do polígono.</li>
+        <li>Núcleo de água permanente: passagens com o VV do núcleo 3 dB ou mais acima da mediana viram "suspeita de vento/chuva" e saem do cálculo de anomalias.</li>
+        <li>Sentinel-2: MNDWI com limiar fixo por estrutura (0,25 na Eustáquio, calibrado em 4 imagens RGB; 0 nas demais) e controle de qualidade: datas com nuvem acima de 2% no polígono, ou com névoa detectada (SCL e MNDWI do núcleo baixos juntos), ficam fora.</li>
+        <li>Barragens de rejeito: o polígono é dividido em lago, praia saturada e praia seca nas datas com S1 e S2 a até 3 dias.</li>
+        <li>Alertas por z robusto (mediana móvel e MAD das 5 passagens anteriores, |z| &gt; 3) e por variação entre passagens (&gt; 20% e &gt; 5 ha; abaixo de 5 ha, &gt; 1 ha), nunca abaixo do ruído da estrutura. Alertas consecutivos formam um evento.</li>
+        <li>Relatório HTML por estrutura, com séries, eventos, validação, painéis RGB de referência e limitações.</li>
+      </ol>
+    </section>
+
+    <section id="validacao" aria-labelledby="h-validacao">
+      <h2 id="h-validacao">Validação</h2>
+      <p>Cada data Sentinel-2 confiável é comparada com a passagem Sentinel-1 mais próxima, a até
+        6 dias. As diferenças são dadas em hectares; a porcentagem só é calculada
+        quando o lago S2 passa de 5 ha, porque em áreas pequenas ela perde o sentido.</p>
+      <div class="tabela-quadro">
+      <table>
+        <thead><tr><th>Estrutura</th><th class="num">Datas</th><th class="num">Erro médio</th><th class="num">Viés S1 − S2</th><th class="num">Erro (%)</th><th class="num">Viés (%)</th></tr></thead>
+        <tbody>
+        
+          <tr><td>Lagoa da Pampulha</td><td class="num">41</td>
+            <td class="num">6,8 ha</td><td class="num">-6,7 ha</td>
+            <td class="num">3,7%</td>
+            <td class="num">-3,7%</td></tr>
+        
+          <tr><td>Barragem Eustáquio</td><td class="num">36</td>
+            <td class="num">267,7 ha</td><td class="num">+254,1 ha</td>
+            <td class="num">51,8%</td>
+            <td class="num">+49,6%</td></tr>
+        
+          <tr><td>Barragem Santo Antônio</td><td class="num">70</td>
+            <td class="num">33,5 ha</td><td class="num">+32,5 ha</td>
+            <td class="num">195,4%</td>
+            <td class="num">+189,2%</td></tr>
+        
+          <tr><td>Santo Antônio – lago oeste</td><td class="num">67</td>
+            <td class="num">11,2 ha</td><td class="num">-9,6 ha</td>
+            <td class="num">53,5%</td>
+            <td class="num">-49,1%</td></tr>
+        
+        </tbody>
+      </table>
+      </div>
+      <p class="dica">Na Eustáquio e na Santo Antônio a diferença não é erro de medida: o S1 conta também o
+        rejeito saturado (ver abaixo).</p>
+    </section>
+
+    <section id="controle" aria-labelledby="h-controle">
+      <h2 id="h-controle">Controle e rejeito: o que o radar mede</h2>
+      <p>A Lagoa da Pampulha é a estrutura de controle: um espelho d'água urbano, sem rejeito, em que
+        o radar só pode estar vendo água. Ela mostra quanto o método erra quando a premissa vale. A Eustáquio
+        mostra o que acontece quando a premissa não vale.</p>
+      <div class="contraste">
+        <div>
+          <span class="selo selo-controle">Controle</span>
+          <h3>Lagoa da Pampulha</h3>
+          <p>Contra o Sentinel-2, viés de <b>-3,7%</b> e erro médio de
+            <b>3,7%</b> em 41 datas. O S1 mede um pouco menos
+            que o S2, de forma estável: o limite de −15 dB corta as bordas do lago.</p>
+        </div>
+        <div>
+          <span class="selo selo-monitorada">Monitorada</span>
+          <h3>Barragem Eustáquio</h3>
+          <p>Viés de <b>+49,6%</b> (+254 ha) em
+            36 datas. O rejeito saturado é liso como a água e também fica escuro no radar, então
+            entra na "superfície escura". Por isso, nas barragens de rejeito, o lago vem do Sentinel-2 e os
+            alertas usam a série S2.</p>
+        </div>
+      </div>
+    </section>
+
+    
+    <section id="sensibilidade" aria-labelledby="h-sensibilidade">
+      <h2 id="h-sensibilidade">Sensibilidade do limiar</h2>
+      
+      <p>Diagnóstico feito antes do cadastro das barragens de Paracatu, na lagoa usada como teste. Viés e erro do lago S1 em relação ao lago S2 nas 41 datas com S2 confiável (S1 a até 6 dias). O NDWI (B03/B08, 10 m) foi usado como segunda referência, para descartar um efeito da banda SWIR de 20 m.</p>
+      <div class="tabela-quadro">
+      <table>
+        <thead><tr><th>Variante S1</th><th class="num">Viés vs MNDWI</th><th class="num">Erro vs MNDWI</th><th class="num">Viés vs NDWI 10 m</th><th class="num">Erro vs NDWI 10 m</th><th class="num">Lago S1 (mediana)</th></tr></thead>
+        <tbody>
+          <tr style="font-weight:600"><td>Lee 7×7, limiar −15 dB (em uso)</td><td class="num">−3,7%</td><td class="num">3,7%</td><td class="num">−4,3%</td><td class="num">4,3%</td><td class="num">172,4 ha</td></tr>
+        
+          <tr><td>Lee 7×7, limiar −16 dB</td><td class="num">−7,5%</td><td class="num">7,5%</td><td class="num">−8,1%</td><td class="num">8,1%</td><td class="num">166,2 ha</td></tr>
+        
+          <tr><td>Lee 7×7, limiar −14 dB</td><td class="num">−0,5%</td><td class="num">1,9%</td><td class="num">−1,2%</td><td class="num">1,4%</td><td class="num">177,9 ha</td></tr>
+        
+          <tr><td>Sem filtro de Lee (Otsu limitado)</td><td class="num">−1,3%</td><td class="num">2,2%</td><td class="num">−2,0%</td><td class="num">2,0%</td><td class="num">176,6 ha</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p>As duas referências S2 concordam entre si (mediana de 177,8 ha com MNDWI e 179,8 ha com NDWI), então o viés vem do limiar do S1. Cada 1 dB a mais acrescenta cerca de 6 ha ao lago da Pampulha.</p><p>Mantivemos −15 dB por quatro motivos. (1) O intervalo de −20 a −15 dB foi definido antes do teste; −14 dB fica fora dele, e o ajuste foi medido numa lagoa urbana só. (2) Nas barragens de rejeito o erro dominante é o oposto: rejeito saturado e praia seca lisa já aparecem como água (ver Limitações demonstradas); um limiar mais frouxo aumentaria esse erro. (3) Sem o filtro de Lee o viés cai, mas o ruído cresce: no teste com imagem simulada, a máscara antes da limpeza passa de 0 para cerca de 170 pixels de água falsa. (4) O viés de −3,7% é estável entre as datas, então não atrapalha a detecção de variações, que é o objetivo do monitoramento.</p>
+      
+    </section>
+
+    <section id="limitacoes" aria-labelledby="h-limitacoes">
+      <h2 id="h-limitacoes">Limitações demonstradas</h2>
+      <p>Observadas nos próprios dados deste monitoramento, não em literatura.</p>
+      
+        <h3>Rejeito saturado aparece como água no radar</h3>
+        <p>No painel de 27/07/2025 o S1 marcou como superfície escura quase todo o polígono, incluindo a praia cinza visível no RGB, enquanto o S2 marcou só o lago. Nas 37 datas com S2 confiável, a superfície escura S1 ficou em média 263 ha acima do lago S2. A polarização VH não separa as duas classes: mediana de −25,8 dB no lago e −25,6 dB na praia saturada (acurácia de 0,54 com o melhor limiar único, 0,5 = não separa).</p>
+        <p class="dica">Registrada em: Barragem Eustáquio.</p>
+      
+        <h3>Limiar MNDWI fixo</h3>
+        <p>O MNDWI do lago varia entre datas (mediana de 0,79 em 27/07/2025 e de 0,38 em 27/09/2026), provavelmente pela turbidez. O limiar 0,25 foi o que melhor reproduziu o lago visível nas 4 imagens RGB de referência (concordância média de 0,81), mas é um meio-termo. Com 0,20 e 0,30 a mediana do lago S2 passa de 553 ha para 568 ha e 516 ha.</p>
+        <p class="dica">Registrada em: Barragem Eustáquio.</p>
+      
+        <h3>Classe &#39;água&#39; da SCL em lago turvo</h3>
+        <p>Em 4 cenas limpas (30/09/2025, 02/10/2025, 10/10/2026 e 20/10/2026) a banda SCL classificou como água só 21–26% do núcleo de água do S2, contra uma mediana de 99%, embora o lago esteja visível no RGB e o MNDWI o detecte normalmente (81–100% do núcleo). Por isso o controle de qualidade exige as duas quedas juntas. Só 14/11/2025 foi reprovada: SCL 3% e MNDWI 56% do núcleo, com o lago S2 em 252 ha, contra 442–500 ha nas datas vizinhas.</p>
+        <p class="dica">Registrada em: Barragem Eustáquio.</p>
+      
+        <h3>Otsu sem o limite de segurança</h3>
+        <p>Limiar de Otsu bruto do S1 entre abr/2025 e nov/2026: Eustáquio de −16,3 a −12,5 dB (mediana −15,0); Santo Antônio de −16,1 a −9,3 dB (mediana −13,5); lago oeste de −15,8 a −8,1 dB (mediana −13,7). Onde há pouca água o histograma não tem dois picos e o Otsu sobe até −8 dB, o que marcaria como água grandes áreas que não são. Por isso o limite de −20 a −15 dB é mantido.</p>
+        <p class="dica">Registrada em: Barragem Eustáquio, Barragem Santo Antônio, Santo Antônio – lago oeste.</p>
+      
+        <h3>Percentuais em áreas pequenas</h3>
+        <p>Na Santo Antônio, o erro médio S1×S2 em % chegou a 13.959% porque as áreas S2 eram próximas de zero; no lago oeste, em 2025, oscilações em torno de 1 ha geravam variações de até +3.600% entre passagens. Desde 24/11/2026 a regra de variação usa hectares quando a área anterior é menor que 5 ha, e a validação é feita em hectares (em % só quando a área S2 passa de 5 ha).</p>
+        <p class="dica">Registrada em: Barragem Eustáquio, Barragem Santo Antônio, Santo Antônio – lago oeste.</p>
+      
+        <h3>Praia seca lisa aparece escura no radar</h3>
+        <p>No painel de 20/09/2026 o RGB não mostra água no polígono e o S2 mede 0,8 ha, mas o S1 marca manchas escuras, incluindo a praia branca seca junto à crista nordeste. Por isso a métrica de distância lago–crista é não interpretável nesta barragem, e a classe &#39;praia saturada&#39; (escuro no S1 e não água no S2) pode incluir praia seca lisa: ela atinge o máximo em set–out, no fim da estação seca, nos dois anos (121 ha em 28/09/2025 e 85 ha em 12/10/2026).</p>
+        <p class="dica">Registrada em: Barragem Santo Antônio.</p>
+      
+    </section>
+
+    <section id="cobertura" aria-labelledby="h-cobertura">
+      <h2 id="h-cobertura">Lacuna de cobertura em Paracatu</h2>
+      <p>A série de Paracatu começa em abril de 2025 porque, antes disso, nenhum satélite Sentinel-1 imageava
+        a região na órbita disponível. O catálogo foi conferido nas coleções GRD e RTC.</p>
+      <div class="tabela-quadro">
+      <table>
+        <thead><tr><th>Período</th><th>Satélite</th><th>Passagens</th></tr></thead>
+        <tbody>
+          <tr><td>até dez/2021</td><td>Sentinel-1B</td><td>a cada 12 dias (28 datas em 2021)</td></tr>
+          <tr><td>jan/2022 a mar/2025</td><td>nenhum</td><td>o Sentinel-1B parou em dez/2021 e o Sentinel-1A não cobria a região</td></tr>
+          <tr><td>a partir de abr/2025</td><td>Sentinel-1C</td><td>a cada 12 dias, órbita descendente 126</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+
+    <section id="creditos" aria-labelledby="h-creditos">
+      <h2 id="h-creditos">Créditos e atribuições</h2>
+      <ul class="creditos">
+        <li><b>Copernicus / ESA:</b> contém dados Copernicus Sentinel-1 e Sentinel-2 modificados (2023–2026).</li>
+        <li><b>Microsoft Planetary Computer:</b> acesso às coleções Sentinel-1 RTC, Sentinel-2 L2A e Copernicus DEM.</li>
+        <li><b>ANM – SIGBM:</b> coordenadas, categoria de risco e dano potencial das barragens (consulta pública).</li>
+        <li><b>Esri:</b> mapa de satélite World Imagery (Esri, Maxar, Earthstar Geographics e comunidade GIS).</li>
+        <li><b>OpenStreetMap:</b> mapa base © colaboradores do OpenStreetMap (licença ODbL).</li>
+        <li><b>Software:</b> Leaflet (BSD-2), Chart.js (MIT), fontes IBM Plex Sans e Barlow Semi Condensed (SIL OFL).</li>
+      </ul>
+    </section>
+  </article>
+</div>
+
+  </main>
+
+  <footer class="rodape">
+    <p class="rodape-aviso"><b>Projeto acadêmico (ADS – UNIFADESA).</b> Não é monitoramento oficial nem avaliação de segurança. A situação oficial das barragens está no <a href="https://app.anm.gov.br/SIGBM/Publico/GerenciarPublico" rel="noopener" target="_blank">SIGBM/ANM</a>.</p>
+    <p class="rodape-creditos">Contém dados Copernicus Sentinel modificados (ESA), acessados pelo Microsoft Planetary Computer; cadastro ANM-SIGBM; mapas © OpenStreetMap e Esri.</p>
+  </footer>
+
+  
+</body>
+</html>

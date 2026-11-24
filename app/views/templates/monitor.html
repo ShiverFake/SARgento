@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{# Tela de monitoramento: mapa à esquerda, painel da estrutura à direita.
+   /mapa/ abre sem seleção; /estrutura/<slug>/ abre com a estrutura escolhida. #}
+
+{% block titulo %}{% if estrutura %}{{ estrutura.nome }} – {% else %}Monitoramento – {% endif %}{% endblock %}
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+{% endblock %}
+{% block classe_body %}tela-monitor{% endblock %}
+{% block body_attrs %}{% if estrutura %}data-estrutura="{{ estrutura.slug }}"{% endif %}{% endblock %}
+{% block classe_main %}monitor{% endblock %}
+
+{% block conteudo %}
+  <section id="mapa" aria-label="Mapa das estruturas"></section>
+
+  <section id="painel" aria-label="Dados da estrutura selecionada">
+    <div class="painel-bloco">
+      <div id="seletorEstrutura" class="seletor-estrutura" aria-label="Escolher estrutura"></div>
+      <p class="aviso atencao" id="erroCarga" hidden></p>
+
+      <div id="vazio">
+        <h2>Escolha uma estrutura</h2>
+        <p class="dica">Clique num marcador do mapa ou num dos botões acima para ver as séries, os alertas e a validação.</p>
+        <ul class="legenda-risco">
+          <li><span class="bola" style="background:#3f88c5"></span>Monitorada, CRI baixo</li>
+          <li><span class="bola" style="background:#f49d37"></span>Monitorada, CRI médio</li>
+          <li><span class="bola" style="background:#d7263d"></span>Monitorada, CRI alto</li>
+          <li><span class="bola" style="background:#2f6f8f"></span>Estrutura de controle</li>
+        </ul>
+      </div>
+
+      <div id="detalhe" hidden>
+        <div class="painel-cabeca">
+          <h2 id="titulo"></h2>
+          <span id="seloPapel"></span>
+        </div>
+        <dl class="ficha" id="ficha"></dl>
+        <p class="aviso" id="observacao" hidden style="margin-top:12px"></p>
+
+        <div class="controles">
+          <label>Máscara de água da data
+            <select id="seletorData"></select>
+          </label>
+          <label><input type="checkbox" id="mostrarMascara" checked> Mostrar no mapa</label>
+          <a id="linkRelatorio" class="botao secundario" target="_blank" rel="noopener">{% if vitrine %}Abrir relatório{% else %}Gerar relatório{% endif %}</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="detalheDados" class="detalhe-dados" hidden>
+      <div id="graficos">
+        <div id="blocoArea" class="painel-bloco">
+          <h3 id="tituloArea">Área do lago e da praia</h3>
+          <p class="aviso" id="avisoRejeito" hidden>Barragem de rejeito: o radar não distingue água de
+            rejeito saturado, porque os dois são lisos e escuros. A série S1 é a <b>superfície escura no
+            radar (água + rejeito saturado)</b>; o lago em si vem do Sentinel-2.</p>
+          <div class="grafico"><canvas id="grafico" aria-label="Gráfico da série temporal de áreas"></canvas></div>
+          <p class="dica">Clique num ponto do gráfico para ver a máscara daquela data no mapa.</p>
+        </div>
+        <div id="blocoClasses" class="painel-bloco" hidden>
+          <h3>Classes da superfície (S1 + S2 a até 3 dias)</h3>
+          <p class="dica">Lago: água no S2. Praia saturada: escura no S1 e sem água no S2. Praia seca: o restante do polígono.</p>
+          <div class="grafico"><canvas id="graficoClasses" aria-label="Gráfico das classes da superfície"></canvas></div>
+        </div>
+        <div id="blocoCrista" class="painel-bloco" hidden>
+          <h3>Distância lago–crista</h3>
+          <p class="aviso">Observação, não é avaliação de segurança. Precisão aproximada de
+            ±<span id="precisaoCrista">20</span> m (pixel de 10 m e distorções do talude no radar).</p>
+          <p class="aviso atencao" id="avisoCrista" hidden></p>
+          <div class="grafico"><canvas id="graficoCrista" aria-label="Gráfico da distância entre a água e a crista"></canvas></div>
+        </div>
+      </div>
+
+      <div class="painel-bloco">
+        <h3>Anomalias e ocorrências</h3>
+        <div id="contagemAnomalias" class="contagem"></div>
+        <div class="tabela-quadro">
+          <table id="tabelaAnomalias">
+            <thead><tr><th>Data</th><th>Fonte</th><th>Status</th><th class="num">Área (ha)</th><th>Motivo</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="painel-bloco">
+        <h3>Validação com o Sentinel-2</h3>
+        <p class="dica" id="notaValidacao"></p>
+        <div class="tabela-quadro">
+          <table id="tabelaValidacao">
+            <thead><tr><th>S2</th><th>S1</th><th class="num">Nuvem</th><th class="num">S1 (ha)</th><th class="num">S2 (ha)</th><th class="num">Dif. (ha)</th><th class="num">Dif. %</th></tr></thead>
+            <tbody></tbody>
+            <tfoot></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/chartjs/chartjs-adapter-date-fns.bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1366">
+  <title>Barragem Eustáquio – SARgento – Monitoramento de barragens de rejeito por radar</title>
+  <meta name="description" content="Projeto acadêmico que acompanha a superfície de água e de rejeito de barragens com imagens de radar Sentinel-1, validadas com Sentinel-2.">
+  <meta name="theme-color" content="#14212b">
+  <meta property="og:title" content="SARgento – Monitoramento de barragens de rejeito por radar">
+  <meta property="og:description" content="Séries Sentinel-1 e Sentinel-2 de barragens de rejeito, com alertas, validação e limitações do método.">
+  <link rel="icon" href="../../static/img/sargento.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../static/css/sargento.css">
+  
+  <link rel="stylesheet" href="../../static/vendor/leaflet/leaflet.css">
+
+  <!-- base: "/" no servidor; caminho relativo na vitrine estática (preenchido pelo build) -->
+  <script>window.SARGENTO = { base: "../../", vitrine: true };</script>
+</head>
+<body class="tela-monitor" data-estrutura="barragem-eustaquio">
+  <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+  <header class="topo">
+    <a class="marca" href="../../">
+      <img src="../../static/img/sargento.svg" alt="" width="30" height="30">
+      <span class="marca-nome">SARgento</span>
+    </a>
+    <span class="marca-sub">Monitoramento de barragens de rejeito por radar</span>
+    <nav class="menu" aria-label="Principal">
+      <a href="../../" >Início</a>
+      <a href="../../mapa/" aria-current="page">Monitoramento</a>
+      <a href="../../metodo/" >Sobre o método</a>
+    </nav>
+    
+    <span class="demo" title="Versão publicada sem servidor: nada é processado aqui.">Demonstração: dados congelados em 24/11/2026, sem processamento</span>
+    
+  </header>
+
+  <main id="conteudo" class="monitor">
+    
+  <section id="mapa" aria-label="Mapa das estruturas"></section>
+
+  <section id="painel" aria-label="Dados da estrutura selecionada">
+    <div class="painel-bloco">
+      <div id="seletorEstrutura" class="seletor-estrutura" aria-label="Escolher estrutura"></div>
+      <p class="aviso atencao" id="erroCarga" hidden></p>
+
+      <div id="vazio">
+        <h2>Escolha uma estrutura</h2>
+        <p class="dica">Clique num marcador do mapa ou num dos botões acima para ver as séries, os alertas e a validação.</p>
+        <ul class="legenda-risco">
+          <li><span class="bola" style="background:#3f88c5"></span>Monitorada, CRI baixo</li>
+          <li><span class="bola" style="background:#f49d37"></span>Monitorada, CRI médio</li>
+          <li><span class="bola" style="background:#d7263d"></span>Monitorada, CRI alto</li>
+          <li><span class="bola" style="background:#2f6f8f"></span>Estrutura de controle</li>
+        </ul>
+      </div>
+
+      <div id="detalhe" hidden>
+        <div class="painel-cabeca">
+          <h2 id="titulo"></h2>
+          <span id="seloPapel"></span>
+        </div>
+        <dl class="ficha" id="ficha"></dl>
+        <p class="aviso" id="observacao" hidden style="margin-top:12px"></p>
+
+        <div class="controles">
+          <label>Máscara de água da data
+            <select id="seletorData"></select>
+          </label>
+          <label><input type="checkbox" id="mostrarMascara" checked> Mostrar no mapa</label>
+          <a id="linkRelatorio" class="botao secundario" target="_blank" rel="noopener">Abrir relatório</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="detalheDados" class="detalhe-dados" hidden>
+      <div id="graficos">
+        <div id="blocoArea" class="painel-bloco">
+          <h3 id="tituloArea">Área do lago e da praia</h3>
+          <p class="aviso" id="avisoRejeito" hidden>Barragem de rejeito: o radar não distingue água de
+            rejeito saturado, porque os dois são lisos e escuros. A série S1 é a <b>superfície escura no
+            radar (água + rejeito saturado)</b>; o lago em si vem do Sentinel-2.</p>
+          <div class="grafico"><canvas id="grafico" aria-label="Gráfico da série temporal de áreas"></canvas></div>
+          <p class="dica">Clique num ponto do gráfico para ver a máscara daquela data no mapa.</p>
+        </div>
+        <div id="blocoClasses" class="painel-bloco" hidden>
+          <h3>Classes da superfície (S1 + S2 a até 3 dias)</h3>
+          <p class="dica">Lago: água no S2. Praia saturada: escura no S1 e sem água no S2. Praia seca: o restante do polígono.</p>
+          <div class="grafico"><canvas id="graficoClasses" aria-label="Gráfico das classes da superfície"></canvas></div>
+        </div>
+        <div id="blocoCrista" class="painel-bloco" hidden>
+          <h3>Distância lago–crista</h3>
+          <p class="aviso">Observação, não é avaliação de segurança. Precisão aproximada de
+            ±<span id="precisaoCrista">20</span> m (pixel de 10 m e distorções do talude no radar).</p>
+          <p class="aviso atencao" id="avisoCrista" hidden></p>
+          <div class="grafico"><canvas id="graficoCrista" aria-label="Gráfico da distância entre a água e a crista"></canvas></div>
+        </div>
+      </div>
+
+      <div class="painel-bloco">
+        <h3>Anomalias e ocorrências</h3>
+        <div id="contagemAnomalias" class="contagem"></div>
+        <div class="tabela-quadro">
+          <table id="tabelaAnomalias">
+            <thead><tr><th>Data</th><th>Fonte</th><th>Status</th><th class="num">Área (ha)</th><th>Motivo</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="painel-bloco">
+        <h3>Validação com o Sentinel-2</h3>
+        <p class="dica" id="notaValidacao"></p>
+        <div class="tabela-quadro">
+          <table id="tabelaValidacao">
+            <thead><tr><th>S2</th><th>S1</th><th class="num">Nuvem</th><th class="num">S1 (ha)</th><th class="num">S2 (ha)</th><th class="num">Dif. (ha)</th><th class="num">Dif. %</th></tr></thead>
+            <tbody></tbody>
+            <tfoot></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  </main>
+
+  <footer class="rodape">
+    <p class="rodape-aviso"><b>Projeto acadêmico (ADS – UNIFADESA).</b> Não é monitoramento oficial nem avaliação de segurança. A situação oficial das barragens está no <a href="https://app.anm.gov.br/SIGBM/Publico/GerenciarPublico" rel="noopener" target="_blank">SIGBM/ANM</a>.</p>
+    <p class="rodape-creditos">Contém dados Copernicus Sentinel modificados (ESA), acessados pelo Microsoft Planetary Computer; cadastro ANM-SIGBM; mapas © OpenStreetMap e Esri.</p>
+  </footer>
+
+  
+  <script src="../../static/vendor/leaflet/leaflet.js"></script>
+  <script src="../../static/vendor/chartjs/chart.umd.js"></script>
+  <script src="../../static/vendor/chartjs/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script src="../../static/js/app.js"></script>
+
+</body>
+</html>

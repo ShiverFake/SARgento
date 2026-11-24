@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1366">
+  <title>Relatório – {{ barragem.nome }} – SARgento – Monitoramento de barragens de rejeito por radar</title>
+  <!-- favicon embutido: o relatório abre sozinho, sem servidor -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2314212B'/%3E%3Cg fill='none' stroke='%23C9971C' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 13.5 16 7.5l8 6'/%3E%3Cpath d='M8 19.5 16 13.5l8 6' opacity='.72'/%3E%3Cpath d='M8 25.5 16 19.5l8 6' opacity='.45'/%3E%3C/g%3E%3C/svg%3E">
+  <style>
+    body { font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; color: #14212b; background: #eef2f4;
+           margin: 0; font-size: 15px; line-height: 1.55; font-variant-numeric: tabular-nums; }
+    .faixa { background: #14212b; color: #e8eef2; padding: 12px 40px; font-size: 14px; }
+    .faixa b { font-size: 17px; color: #fff; margin-right: 10px; }
+    .folha { max-width: 1000px; margin: 0 auto; padding: 28px 40px 48px; background: #fff; border-left: 1px solid #cfd8de; border-right: 1px solid #cfd8de; }
+    h1, h2, h3, h4 { font-family: "Barlow Semi Condensed", "Arial Narrow", "Segoe UI", sans-serif; font-weight: 600; line-height: 1.15; }
+    h1 { margin: 0 0 6px; font-size: 34px; }
+    h2 { margin-top: 32px; padding-top: 18px; border-top: 1px solid #cfd8de; font-size: 24px; }
+    .meta { color: #56656f; margin-top: 0; }
+    .cards { display: flex; flex-wrap: wrap; gap: 12px; margin: 18px 0; }
+    .card { border: 1px solid #cfd8de; border-radius: 6px; padding: 10px 14px; min-width: 150px; background: #f6f8f9; }
+    .card b { display: block; font-size: 1.4rem; }
+    .alerta b { color: #b4232f; }
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; margin-bottom: 20px; }
+    th, td { padding: 6px 8px; border-bottom: 1px solid #e3e8eb; text-align: left; vertical-align: top; }
+    th { background: #f6f8f9; }
+    td.num { text-align: right; }
+    tr.nao-confiavel td { color: #8995a0; }
+    tfoot td { font-weight: 600; border-top: 2px solid #cfd8de; }
+    .selo { font-size: .75rem; padding: 1px 6px; border-radius: 4px; background: #eef0f3; color: #56656f; }
+    .legenda span { margin-right: 16px; font-size: .85rem; }
+    .nota { font-size: .9rem; color: #2b3a46; border-left: 3px solid #c9971c; padding-left: 10px; }
+    .aviso-academico { border: 1px solid #cfd8de; border-left: 4px solid #b4232f; background: #fff; padding: 10px 14px; margin: 12px 0 18px; font-size: 14px; }
+    .rodape { max-width: 1000px; margin: 0 auto; padding: 14px 40px; font-size: 12.5px; color: #56656f; }
+  </style>
+</head>
+<body>
+  <div class="faixa"><b>SARgento</b>Monitoramento de barragens de rejeito por radar</div>
+  <div class="folha">
+  <h1>{{ barragem.nome }}</h1>
+  <p class="aviso-academico"><b>Projeto acadêmico (ADS – UNIFADESA).</b> Não é monitoramento oficial nem avaliação de segurança. A situação oficial das barragens está no SIGBM/ANM.</p>
+  <p class="meta">{% if barragem.papel == 'controle' %}Estrutura de controle{% else %}Categoria de risco (CRI): <b>{{ barragem.categoria_risco }}</b>{% if barragem.dano_potencial %}; dano potencial associado (DPA): <b>{{ barragem.dano_potencial }}</b>{% endif %}{% endif %}.
+     Coordenadas: {{ barragem.lat|num(5) }}; {{ barragem.lon|num(5) }}. Gerado em {{ gerado_em }}.</p>
+  {% if barragem.situacao %}<p class="meta">Situação: {{ barragem.situacao }}</p>{% endif %}
+  {% if barragem.observacao %}<p class="nota"><b>Observação:</b> {{ barragem.observacao }}</p>{% endif %}
+
+  {% if limitacoes %}
+  <h2>Limitações demonstradas</h2>
+  <p class="meta">Limitações do método observadas nos próprios dados deste monitoramento.</p>
+  <ul>{% for l in limitacoes %}<li><b>{{ l.titulo }}.</b> {{ l.texto }}</li>{% endfor %}</ul>
+  {% endif %}
+
+  {% if eventos %}
+  <h2>Eventos observados</h2>
+  <p class="meta">Descrições do que os sensores registraram. Não atribuem causa.</p>
+  <ul>{% for e in eventos %}<li><b>{{ e.titulo }}.</b> {{ e.texto }}</li>{% endfor %}</ul>
+  {% endif %}
+
+  {% if s1.empty %}
+    <p>Nenhuma observação Sentinel-1 processada para esta barragem.</p>
+  {% else %}
+    {% set ultima = s1.iloc[-1] %}
+    {% set rot_s1 = "Superfície escura no radar (água + rejeito saturado)" if barragem.rejeito else "Lago S1" %}
+    {% set rot_resto = "Restante do polígono (radar)" if barragem.rejeito else "Praia S1" %}
+    <div class="cards">
+      <div class="card">Passagens S1<b>{{ s1|length }}</b></div>
+      <div class="card">Período<b style="font-size:1rem">{{ s1.data.min().strftime('%d/%m/%Y') }} – {{ s1.data.max().strftime('%d/%m/%Y') }}</b></div>
+      <div class="card">{{ "Superfície escura S1" if barragem.rejeito else "Lago S1" }} (última)<b>{{ ultima.area_lago_ha|num }} ha</b></div>
+      <div class="card">{{ "Restante S1" if barragem.rejeito else "Praia S1" }} (última)<b>{{ ultima.area_praia_ha|num }} ha</b></div>
+      <div class="card {% if n_anomalias %}alerta{% endif %}">Anomalias ({{ fonte_alertas }})<b>{{ n_anomalias }}</b></div>
+      <div class="card">Eventos de alerta<b>{{ eventos_alerta|length }}</b></div>
+      <div class="card">Suspeitas vento/chuva<b>{{ n_suspeitas }}</b></div>
+      {% if erro_medio_ha is not none %}
+      <div class="card">Erro médio S1×S2<b>{{ erro_medio_ha|num(1) }} ha</b></div>
+      <div class="card">Viés médio S1−S2<b>{{ vies_medio_ha|num(1, true) }} ha</b></div>
+      {% endif %}
+    </div>
+
+    {% if barragem.rejeito %}
+    <p class="nota"><b>Barragem de rejeito.</b> O radar não distingue água de rejeito saturado
+      (os dois são lisos e escuros). A série S1 abaixo é a <b>superfície escura no radar
+      (água + rejeito saturado)</b>, não o lago. O lago vem do Sentinel-2
+      {%- if barragem.mndwi_limiar is not none %} (MNDWI &gt; {{ barragem.mndwi_limiar|num(2) }},
+      limiar calibrado em imagens RGB){% endif %}.</p>
+    {% endif %}
+
+    <h2>Série temporal: {{ rot_s1|lower if barragem.rejeito else "área do lago" }}</h2>
+    {{ grafico }}
+    <p class="legenda">
+      <span style="color:#1e78c8">━ {{ rot_s1 }}</span>
+      <span style="color:#d7263d">● Anomalia S1, ◆ anomalia S2 (fonte principal)</span>
+      <span style="color:#9aa3ad">○ ◇ baixa confiabilidade</span>
+      <span style="color:#7b4fb3">○ Retorno ao normal</span>
+      <span style="color:#6b7280">× Suspeita de vento/chuva</span>
+      <span style="color:#2a9d8f">■ Lago S2 confiável</span>
+      <span style="color:#2a9d8f">□ Lago S2 não confiável</span>
+    </p>
+
+    {% if sensibilidade %}
+    <h3>Faixa de incerteza do lago S2 (datas confiáveis)</h3>
+    <p class="meta">A área do lago S2 depende do limiar MNDWI. Mediana e extremos no período
+      para cada limiar:</p>
+    <table>
+      <thead><tr><th>Limiar MNDWI</th><th>Datas</th><th>Mediana (ha)</th><th>Mínimo (ha)</th><th>Máximo (ha)</th></tr></thead>
+      <tbody>
+      {% for s in sensibilidade %}
+        <tr{% if barragem.mndwi_limiar is not none and (s.limiar - barragem.mndwi_limiar)|abs < 0.001 %} style="font-weight:600"{% endif %}>
+          <td>&gt; {{ s.limiar|num(2) }}{% if barragem.mndwi_limiar is not none and (s.limiar - barragem.mndwi_limiar)|abs < 0.001 %} (usado){% endif %}</td>
+          <td class="num">{{ s.n }}</td><td class="num">{{ s.mediana|num(1) }}</td>
+          <td class="num">{{ s.minimo|num(1) }}</td><td class="num">{{ s.maximo|num(1) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {% if classes|length %}
+    <h2>Classes da superfície (S1 + S2 a até {{ config.CLASSES_TOLERANCIA_DIAS }} dias)</h2>
+    <p class="meta">Nas datas com S2 confiável a até {{ config.CLASSES_TOLERANCIA_DIAS }} dias da
+      passagem S1: <b>lago</b> = água no S2; <b>praia saturada</b> = escuro no S1 e não água no S2;
+      <b>praia seca</b> = restante do polígono.</p>
+    {{ classes_svg }}
+    <p class="legenda"><span style="color:#1e78c8">━ Lago</span>
+      <span style="color:#8a5a2b">━ Praia saturada</span>
+      <span style="color:#c9a227">━ Praia seca</span></p>
+    <table>
+      <thead><tr><th>S1</th><th>S2</th><th>Dias</th><th>Lago (ha)</th><th>Praia saturada (ha)</th>
+        <th>Praia seca (ha)</th><th>Sem dado S2 (ha)</th></tr></thead>
+      <tbody>
+      {% for _, c in classes.iterrows() %}
+        <tr><td>{{ c.data_s1.strftime('%d/%m/%Y') }}</td><td>{{ c.data_s2.strftime('%d/%m/%Y') }}</td>
+          <td class="num">{{ '%+d'|format(c.dias) }}</td><td class="num">{{ c.lago_ha|num(1) }}</td>
+          <td class="num">{{ c.praia_saturada_ha|num(1) }}</td><td class="num">{{ c.praia_seca_ha|num(1) }}</td>
+          <td class="num">{{ c.sem_dado_ha|num(1) }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {% if crista_resumo %}
+    <h2>Distância lago–crista</h2>
+    {% if not barragem.crista_interpretavel %}
+    <p class="nota" style="border-left-color:#d7263d"><b>Métrica {{ barragem.crista_nota or "não interpretável" }}.</b>
+      Os valores abaixo são mantidos só para registro.</p>
+    {% endif %}
+    <p class="nota"><b>Observação, não é avaliação de segurança.</b> Indica onde o radar
+      (Sentinel-1) viu água em relação à borda de montante da crista, desenhada sobre imagem.
+      Não informa borda livre, nível d'água, percolação nem estabilidade.
+      Precisão aproximada de ±{{ config.CRISTA_PRECISAO_M }} m (pixel de 10 m e distorções
+      geométricas do radar no talude).</p>
+    {{ crista_svg }}
+    <p class="legenda">% da extensão de cada trecho com água a menos de
+      {{ config.CRISTA_DISTANCIA_M|num(0) }} m.</p>
+    <table>
+      <thead><tr><th>Trecho</th><th>Comprimento (m)</th><th>Última data</th>
+        <th>Água a &lt; {{ config.CRISTA_DISTANCIA_M|num(0) }} m (última)</th><th>Dist. mínima (última)</th>
+        <th>% mín.–mediana–máx. no período</th><th>Datas sem água</th></tr></thead>
+      <tbody>
+      {% for c in crista_resumo %}
+        <tr{% if c.trecho == 'total' %} style="font-weight:600"{% endif %}>
+          <td>{{ c.trecho }}</td>
+          <td class="num">{{ c.comprimento_m|num(0) }}</td>
+          <td>{{ c.ultima_data.strftime('%d/%m/%Y') }}</td>
+          <td class="num">{{ c.ult_m|num(0) }} m ({{ c.ult_pct|num(1) }}%)</td>
+          <td class="num">{% if c.ult_dist == c.ult_dist and c.ult_dist is not none %}{{ c.ult_dist|num(0) }} m{% else %}sem água{% endif %}</td>
+          <td class="num">{{ c.min_pct|num(1) }} – {{ c.med_pct|num(1) }} – {{ c.max_pct|num(1) }}%</td>
+          <td class="num">{{ c.datas_sem_agua }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    <h2>Variações anômalas e ocorrências</h2>
+    <p class="meta">Anomalia: |z robusto| &gt; {{ config.LIMIAR_Z|num(0) }} (mediana + MAD das
+      {{ config.JANELA_MEDIANA }} passagens anteriores) ou variação entre passagens consecutivas
+      &gt; {{ config.LIMIAR_VARIACAO_PCT|num(0) }}% <b>e</b> &gt; {{ config.LIMIAR_VARIACAO_MIN_HA|num(0) }} ha
+      (área anterior ≥ {{ config.AREA_MIN_PCT_HA|num(0) }} ha)
+      ou &gt; {{ config.LIMIAR_VARIACAO_ABS_HA|num(0) }} ha (área anterior &lt; {{ config.AREA_MIN_PCT_HA|num(0) }} ha).
+      Suspeita de vento/chuva: VV mediano do núcleo de água permanente
+      ≥ {{ config.LIMIAR_SUSPEITA_DB|num(0) }} dB acima da mediana da série (excluída do cálculo).
+      Retorno ao normal: volta ao nível anterior a uma anomalia.
+      MAD mínimo no z robusto: o maior entre {{ (100 * config.MAD_MIN_REL)|num(0) }}% da mediana
+      e {{ config.MAD_MIN_HA|num(1) }} ha.</p>
+    <p class="nota"><b>Fonte dos alertas desta estrutura: {{ fonte_alertas }}</b>
+      ({{ "Sentinel-2, lago; só datas com até " ~ config.NUVEM_MAX_POLIGONO_PCT|num(0) ~ "% de nuvem no polígono" if fonte_alertas == "S2" else "Sentinel-1, todas as passagens" }}).
+      Ocorrências da outra fonte aparecem em cinza como <b>baixa confiabilidade</b>, e alertas
+      <b>revisados</b> na conferência visual como provável falso positivo continuam listados com a
+      justificativa. Nenhum dos dois entra na contagem de anomalias do cabeçalho.
+      {% if barragem.ruido_ha %}Ruído de medição desta estrutura: {{ barragem.ruido_ha|num(0) }} ha
+      (nenhuma regra alerta para mudanças menores que isso).{% endif %}</p>
+    <h3>Contagem de alertas</h3>
+    <table style="max-width:640px">
+      <thead><tr><th>Contam (fonte principal: {{ fonte_alertas }})</th>
+        <th>Fora da contagem: revisado manualmente</th>
+        <th>Fora da contagem: baixa confiabilidade (fonte secundária)</th></tr></thead>
+      <tbody><tr><td class="num"><b>{{ contagem.contam }}</b></td><td class="num">{{ contagem.revisados }}</td>
+        <td class="num">{{ contagem.baixa }}</td></tr></tbody>
+    </table>
+    <p class="legenda" style="font-size:.85rem;color:#5a6575">
+      <b>Revisado manualmente:</b> alerta da fonte principal que a conferência visual da imagem
+      RGB do mesmo dia classificou como provável falso positivo; a justificativa fica registrada
+      na tabela abaixo (arquivo <code>data/revisoes.json</code>).<br>
+      <b>Baixa confiabilidade (fonte secundária):</b> alerta calculado na série que <i>não</i> é a
+      fonte de alertas desta estrutura ({{ "S1" if fonte_alertas == "S2" else "S2" }}); fica
+      visível para comparação, mas essa série mede outra coisa ou tem mais ruído aqui.</p>
+
+    <h3>Eventos de alerta</h3>
+    <p class="meta">Alertas consecutivos da fonte principal (sem nenhuma passagem normal entre eles)
+      agrupados num mesmo evento.</p>
+    {% if eventos_alerta|length %}
+    {% set sustentados = eventos_alerta[eventos_alerta.tipo == 'sustentado'] %}
+    {% set oscilacoes = eventos_alerta[eventos_alerta.tipo != 'sustentado'] %}
+    <p class="meta"><b>Oscilação de uma data:</b> um único alerta e, na passagem seguinte, a área volta —
+      fica a menos do ruído/limite de variação do nível de antes, ou mais perto do nível de antes do que
+      do valor do alerta (poça sobe ou desce e volta). <b>Evento sustentado:</b> todos os outros (a área
+      não volta, ou o evento tem mais de uma data). O evento sustentado de maior variação é destacado
+      como <b>principal</b>.</p>
+
+    <h4>Eventos sustentados ({{ sustentados|length }})</h4>
+    {% if sustentados|length %}
+    <table>
+      <thead><tr><th>Período</th><th>Datas</th><th>Sentido</th><th>Área antes (ha)</th><th>Área no fim (ha)</th>
+        <th>Variação (ha)</th><th>Área na passagem seguinte (ha)</th><th>|z| máx.</th><th>Observação</th></tr></thead>
+      <tbody>
+      {% for _, e in sustentados.iterrows() %}
+        <tr{% if e.principal %} style="background:#fff3cd;font-weight:600"{% endif %}>
+          <td>{% if e.principal %}<span class="selo" style="background:#d7263d;color:#fff">principal</span><br>{% endif %}
+            {{ e.inicio.strftime('%d/%m/%Y') }}{% if e.n_datas > 1 %} – {{ e.fim.strftime('%d/%m/%Y') }}{% endif %}</td>
+          <td>{{ e.n_datas }}{% if e.n_datas > 1 %}<br><small>{{ e.datas }}</small>{% endif %}</td>
+          <td>{{ e.sentido }}</td>
+          <td class="num">{{ e.area_antes_ha|num(1) }}</td><td class="num">{{ e.area_fim_ha|num(1) }}</td>
+          <td class="num">{{ e.variacao_ha|num(1, true) }}</td>
+          <td class="num">{{ e.area_depois_ha|num(1) }}</td>
+          <td class="num">{{ e.z_max|num(1) }}</td>
+          <td style="font-weight:400">{{ e.anotacao }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p>Nenhum.</p>{% endif %}
+
+    {% if oscilacoes|length %}
+    <h4>Oscilações de uma data — poça sobe/desce e volta ({{ oscilacoes|length }})</h4>
+    <table>
+      <thead><tr><th>Data</th><th>Sentido</th><th>Área antes (ha)</th><th>Área no alerta (ha)</th>
+        <th>Área na passagem seguinte (ha)</th><th>|z|</th></tr></thead>
+      <tbody>
+      {% for _, e in oscilacoes.iterrows() %}
+        <tr><td>{{ e.inicio.strftime('%d/%m/%Y') }}</td><td>{{ e.sentido }}</td>
+          <td class="num">{{ e.area_antes_ha|num(1) }}</td><td class="num">{{ e.area_fim_ha|num(1) }}</td>
+          <td class="num">{{ e.area_depois_ha|num(1) }}</td><td class="num">{{ e.z_max|num(1) }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+    {% else %}
+      <p>Nenhum evento de alerta no período.</p>
+    {% endif %}
+
+    <h3>Todas as ocorrências</h3>
+    {% if ocorrencias|length %}
+    <table>
+      <thead><tr><th>Data</th><th>Fonte</th><th>Status</th><th>Área (ha)</th><th>Mediana ref. (ha)</th><th>z</th>
+                 <th>Var. %</th><th>VV núcleo (dB)</th><th>Motivo</th></tr></thead>
+      <tbody>
+      {% for _, a in ocorrencias.iterrows() %}
+        <tr class="{{ 'nao-confiavel' if a.confiabilidade in ('baixa', 'revisada') else '' }}">
+          <td>{{ a.data.strftime('%d/%m/%Y') }}</td>
+          <td>{{ a.fonte }}</td>
+          <td>{{ a.status_texto }}{% if a.confiabilidade == 'baixa' %} <span class="selo">baixa confiabilidade</span>{% endif %}
+            {%- if a.confiabilidade == 'revisada' %} <span class="selo">revisado: provável falso positivo</span>
+            <br><small>{{ a.revisao }}</small>{% endif %}</td>
+          <td class="num">{{ a.area_ha|num }}</td>
+          <td class="num">{{ a.mediana_movel|num }}</td>
+          <td class="num">{{ a.z|num(1) }}</td>
+          <td class="num">{{ a.var_pct|num(1, true) }}</td>
+          <td class="num">{{ a.vv_nucleo_db|num(1) }}</td>
+          <td>{{ a.motivo }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p>Nenhuma ocorrência no período.</p>
+    {% endif %}
+
+    <h2>Validação com Sentinel-2</h2>
+    <p class="meta">Datas com mais de {{ config.NUVEM_MAX_POLIGONO_PCT|num(0) }}% de nuvem/sombra
+      dentro do polígono (SCL 3, 8, 9, 10) são marcadas como não confiáveis (nuvem). Também são marcadas
+      (SCL) as datas em que, dentro do núcleo de água do S2, a fração classificada como água pela SCL fica
+      abaixo de {{ (100 * config.SCL_FRACAO_MIN_REL)|num(0) }}% da mediana da série <b>e</b> a fração
+      detectada pelo MNDWI fica abaixo de {{ (100 * config.MNDWI_FRACAO_MIN_REL)|num(0) }}% da mediana —
+      sinal de névoa ou fumaça não detectada. Datas não confiáveis ficam fora do erro médio, das classes e dos alertas.
+      Diferenças em hectares para todas as datas; em % só quando a área S2 passa de
+      {{ config.AREA_MIN_PCT_HA|num(0) }} ha.
+      {% if barragem.rejeito %}Atenção: em barragem de rejeito a série S1 inclui o rejeito saturado,
+      então a diferença S1 − S2 mede principalmente a área de praia saturada, não um erro.{% endif %}</p>
+    {% if validacao|length %}
+    <table>
+      <thead><tr><th>Data S2</th><th>Data S1</th><th>Dias</th><th>Nuvem no polígono</th>
+                 <th>{{ "Superfície escura S1" if barragem.rejeito else "Lago S1" }} (ha)</th><th>Lago S2 (ha)</th>
+                 <th>Diferença (ha)</th><th>Diferença %</th></tr></thead>
+      <tbody>
+      {% for _, v in validacao.iterrows() %}
+        <tr class="{{ '' if v.confiavel else 'nao-confiavel' }}">
+          <td>{{ v.data_s2.strftime('%d/%m/%Y') }}{% if not v.confiavel %} <span class="selo">não confiável ({{ v.motivo_nao_confiavel }})</span>{% endif %}</td>
+          <td>{{ v.data_s1.strftime('%d/%m/%Y') }}</td>
+          <td class="num">{{ v.dias }}</td>
+          <td class="num">{{ v.nuvem_poligono_pct|num(1) }}%</td>
+          <td class="num">{{ v.lago_s1_ha|num }}</td>
+          <td class="num">{{ v.lago_s2_ha|num }}</td>
+          <td class="num">{{ v.diferenca_ha|num(2, true) }}</td>
+          <td class="num">{{ v.diferenca_pct|num(1, true) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="6">Erro médio absoluto ({{ n_validas }} data(s) confiável(is); % em {{ n_validas_pct }} com S2 &gt; {{ config.AREA_MIN_PCT_HA|num(0) }} ha)</td>
+          <td class="num">{{ erro_medio_ha|num(2) }}{% if erro_medio_ha is not none %} ha{% endif %}</td>
+          <td class="num">{{ erro_medio|num(1) }}{% if erro_medio is not none %}%{% endif %}</td>
+        </tr>
+        <tr>
+          <td colspan="6">Viés médio S1 − S2 (negativo = S1 mede menos área que o S2)</td>
+          <td class="num">{{ vies_medio_ha|num(2, true) }}{% if vies_medio_ha is not none %} ha{% endif %}</td>
+          <td class="num">{{ vies_medio|num(1, true) }}{% if vies_medio is not none %}%{% endif %}</td>
+        </tr>
+      </tfoot>
+    </table>
+    {% else %}
+      <p>Sem pares S1/S2 próximos (até {{ config.TOLERANCIA_DIAS_VALIDACAO }} dias).</p>
+    {% endif %}
+
+    {% if referencias %}
+    <h2>Datas RGB de referência (conferência visual)</h2>
+    <p class="meta">Rejeito encharcado pode enganar o radar (S1) e o índice MNDWI (S2) ao mesmo
+      tempo. Estas cenas permitem conferir a olho. Em cada painel: RGB com o polígono (amarelo) e a
+      crista (magenta); máscara S2; máscara S1 da passagem mais próxima. Escolhida a cena com
+      menos nuvem/sombra dentro do polígono em cada período.</p>
+    {% for r in referencias %}
+      <h3 style="margin-bottom:4px">{{ r.periodo }}</h3>
+      {% if r.img %}
+        <p class="meta" style="margin:0 0 6px">S2 {{ r.data_s2 }} (nuvem no polígono {{ r.nuvem_poligono_pct|num(1) }}%,
+          lago {{ r.lago_s2_ha|num }} ha, MNDWI &gt; {{ r.limiar_mndwi|num(2) }});
+          S1 {{ r.data_s1 }} ({{ '%+d'|format(r.dias) }} dias, lago {{ r.lago_s1_ha|num }} ha)</p>
+        <img src="{{ r.img }}" alt="Painel de referência {{ r.periodo }}" style="width:100%;border:1px solid #dde3ea">
+      {% else %}
+        <p>Nenhuma cena Sentinel-2 utilizável neste período.</p>
+      {% endif %}
+    {% endfor %}
+    {% endif %}
+
+    <h2>Todas as passagens</h2>
+    <table>
+      <thead><tr><th>Data</th><th>Lago (ha)</th><th>Praia (ha)</th><th>Limiar (dB)</th>
+                 <th>Otsu bruto (dB)</th><th>VV núcleo (dB)</th><th>Δ núcleo (dB)</th><th>Cobertura</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for _, r in s1.iterrows() %}
+        <tr class="{{ 'nao-confiavel' if r.suspeita else '' }}">
+          <td>{{ r.data.strftime('%d/%m/%Y') }}</td>
+          <td class="num">{{ r.area_lago_ha|num }}</td>
+          <td class="num">{{ r.area_praia_ha|num }}</td>
+          <td class="num">{{ r.limiar|num(1) }}</td>
+          <td class="num">{{ r.limiar_otsu_bruto|num(1) }}</td>
+          <td class="num">{{ r.vv_nucleo_db|num(1) }}</td>
+          <td class="num">{{ r.vv_nucleo_delta_db|num(1, true) }}</td>
+          <td class="num">{{ (100 * r.cobertura_valida)|num(0) }}%</td>
+          <td>{% if r.status != 'normal' %}{{ r.status_texto }}{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+
+  {% if metodologia %}
+  <h2>Metodologia</h2>
+  {% for p in metodologia.paragrafos %}<p>{{ p }}</p>{% endfor %}
+  {% if metodologia.sensibilidade_limiar %}
+  {% set t = metodologia.sensibilidade_limiar %}
+  <h3>{{ t.titulo }}</h3>
+  <p class="meta">{{ t.descricao }}</p>
+  <table>
+    <thead><tr>{% for c in t.colunas %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for linha in t.linhas %}
+      <tr{% if loop.first %} style="font-weight:600"{% endif %}>
+        <td>{{ linha[0] }}</td>{% for v in linha[1:] %}<td class="num">{{ v }}</td>{% endfor %}</tr>
+    {% endfor %}</tbody>
+  </table>
+  {% for p in t.conclusao %}<p>{{ p }}</p>{% endfor %}
+  {% endif %}
+  {% endif %}
+
+  <p class="nota">Áreas derivadas de Sentinel-1 RTC (VV, filtro de Lee 7×7, limiar de Otsu
+    limitado a [{{ config.LIMIAR_MIN_DB|num(0) }}; {{ config.LIMIAR_MAX_DB|num(0) }}] dB). Rejeito saturado,
+    vento sobre a água e sombras de relevo podem alterar a classificação. Use como
+    triagem; confirme alertas com inspeção visual e dados de campo.</p>
+  </div>
+  <p class="rodape"><b>Projeto acadêmico (ADS – UNIFADESA).</b> Não é monitoramento oficial nem avaliação de
+    segurança. A situação oficial das barragens está no SIGBM/ANM. Contém dados Copernicus Sentinel modificados
+    (ESA), acessados pelo Microsoft Planetary Computer; cadastro ANM-SIGBM.</p>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+ "Barragem Eustáquio": [
+  {
+   "data": "2025-09-30",
+   "fonte": "S2",
+   "classificacao": "provável falso positivo por turbidez",
+   "motivo": "no RGB do mesmo dia o lago está limpo e visível, sem névoa; a queda fica dentro da variação do MNDWI em lago turvo (|Δ| de até 39 ha entre datas S2 a até 5 dias)",
+   "revisado_em": "24/11/2026 (conferência visual RGB)"
+  },
+  {
+   "data": "2026-10-20",
+   "fonte": "S2",
+   "classificacao": "provável falso positivo por turbidez",
+   "motivo": "no RGB do mesmo dia o lago está limpo e visível, sem névoa; a queda fica dentro da variação do MNDWI em lago turvo (|Δ| de até 39 ha entre datas S2 a até 5 dias)",
+   "revisado_em": "24/11/2026 (conferência visual RGB)"
+  }
+ ]
+}

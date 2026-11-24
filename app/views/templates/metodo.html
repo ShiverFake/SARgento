@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block titulo %}Sobre o método – {% endblock %}
+{% block descricao %}Dados, pipeline, validação, sensibilidade do limiar, limitações e créditos do SARgento.{% endblock %}
+
+
+{% block conteudo %}
+{% set pamp = validacoes.get('lagoa-da-pampulha', {}) %}
+{% set eust = validacoes.get('barragem-eustaquio', {}) %}
+<div class="metodo">
+  <nav class="indice" aria-label="Nesta página">
+    <h2>Nesta página</h2>
+    <ol>
+      <li><a href="#dados">Dados</a></li>
+      <li><a href="#pipeline">Pipeline</a></li>
+      <li><a href="#validacao">Validação</a></li>
+      <li><a href="#controle">Controle e rejeito</a></li>
+      <li><a href="#sensibilidade">Sensibilidade do limiar</a></li>
+      <li><a href="#limitacoes">Limitações demonstradas</a></li>
+      <li><a href="#cobertura">Lacuna de cobertura</a></li>
+      <li><a href="#creditos">Créditos e atribuições</a></li>
+    </ol>
+  </nav>
+
+  <article class="texto-metodo">
+    <h1>Sobre o método</h1>
+    <p class="lead">Como o SARgento transforma imagens de satélite em séries de área, alertas e eventos, o que
+      foi validado e onde o método falha.</p>
+
+    <section id="dados" aria-labelledby="h-dados">
+      <h2 id="h-dados">Dados</h2>
+      <table>
+        <thead><tr><th>Fonte</th><th>O que é</th><th>Como é usado</th></tr></thead>
+        <tbody>
+          <tr><td>Sentinel-1 RTC</td><td>Radar de abertura sintética (banda C), corrigido de terreno, pixel de 10 m, polarizações VV e VH; uma passagem a cada 12 dias por órbita</td>
+            <td>Série principal: superfície escura dentro do polígono. Uma única órbita por estrutura (descendente 126 em Paracatu, descendente 155 na Pampulha), para não misturar geometrias de visada</td></tr>
+          <tr><td>Sentinel-2 L2A</td><td>Imagem óptica com correção atmosférica, bandas de 10 e 20 m e classificação de cena (SCL)</td>
+            <td>Lago pelo índice MNDWI = (B03 − B11) / (B03 + B11); máscara de nuvem e sombra pela SCL; validação do S1 e classes da superfície</td></tr>
+          <tr><td>ANM – SIGBM</td><td>Cadastro público das barragens de mineração</td>
+            <td>Coordenadas da crista, categoria de risco (CRI) e dano potencial associado (DPA)</td></tr>
+          <tr><td>Polígonos e cristas</td><td>Desenhados sobre Sentinel-2 de 20/10/2026 e revisados manualmente</td>
+            <td>Lago + praia sem o maciço; a crista segue a borda de montante (faixa norte da Santo Antônio confirmada como maciço por perfis do Copernicus DEM)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="pipeline" aria-labelledby="h-pipeline">
+      <h2 id="h-pipeline">Pipeline</h2>
+      <ol class="etapas">
+        <li>Busca das cenas no Microsoft Planetary Computer (catálogo STAC) e leitura só do recorte do polígono com 500 m de margem.</li>
+        <li>Filtro de speckle de Lee 7×7 na escala linear e conversão para decibéis (dB).</li>
+        <li>Limiar de Otsu no VV, calculado no polígono mais a margem e preso entre −20 e −15 dB; o que fica abaixo é superfície escura.</li>
+        <li>Limpeza morfológica (janela 3×3 em cruz) e áreas em hectares, sempre só dentro do polígono.</li>
+        <li>Núcleo de água permanente: passagens com o VV do núcleo 3 dB ou mais acima da mediana viram "suspeita de vento/chuva" e saem do cálculo de anomalias.</li>
+        <li>Sentinel-2: MNDWI com limiar fixo por estrutura (0,25 na Eustáquio, calibrado em 4 imagens RGB; 0 nas demais) e controle de qualidade: datas com nuvem acima de {{ config.NUVEM_MAX_POLIGONO_PCT|num(0) }}% no polígono, ou com névoa detectada (SCL e MNDWI do núcleo baixos juntos), ficam fora.</li>
+        <li>Barragens de rejeito: o polígono é dividido em lago, praia saturada e praia seca nas datas com S1 e S2 a até 3 dias.</li>
+        <li>Alertas por z robusto (mediana móvel e MAD das 5 passagens anteriores, |z| &gt; 3) e por variação entre passagens (&gt; 20% e &gt; 5 ha; abaixo de 5 ha, &gt; 1 ha), nunca abaixo do ruído da estrutura. Alertas consecutivos formam um evento.</li>
+        <li>Relatório HTML por estrutura, com séries, eventos, validação, painéis RGB de referência e limitações.</li>
+      </ol>
+    </section>
+
+    <section id="validacao" aria-labelledby="h-validacao">
+      <h2 id="h-validacao">Validação</h2>
+      <p>Cada data Sentinel-2 confiável é comparada com a passagem Sentinel-1 mais próxima, a até
+        {{ config.TOLERANCIA_DIAS_VALIDACAO }} dias. As diferenças são dadas em hectares; a porcentagem só é calculada
+        quando o lago S2 passa de {{ config.AREA_MIN_PCT_HA|num(0) }} ha, porque em áreas pequenas ela perde o sentido.</p>
+      <div class="tabela-quadro">
+      <table>
+        <thead><tr><th>Estrutura</th><th class="num">Datas</th><th class="num">Erro médio</th><th class="num">Viés S1 − S2</th><th class="num">Erro (%)</th><th class="num">Viés (%)</th></tr></thead>
+        <tbody>
+        {% for b in barragens %}{% set v = validacoes[b.slug] %}
+          <tr><td>{{ b.nome }}</td><td class="num">{{ v.n_validas }}</td>
+            <td class="num">{{ v.erro_medio_abs_ha|num(1) }} ha</td><td class="num">{{ v.vies_medio_ha|num(1, true) }} ha</td>
+            <td class="num">{{ v.erro_medio_abs_pct|num(1) }}{% if v.erro_medio_abs_pct is not none %}%{% endif %}</td>
+            <td class="num">{{ v.vies_medio_pct|num(1, true) }}{% if v.vies_medio_pct is not none %}%{% endif %}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      <p class="dica">Na Eustáquio e na Santo Antônio a diferença não é erro de medida: o S1 conta também o
+        rejeito saturado (ver abaixo).</p>
+    </section>
+
+    <section id="controle" aria-labelledby="h-controle">
+      <h2 id="h-controle">Controle e rejeito: o que o radar mede</h2>
+      <p>A Lagoa da Pampulha é a estrutura de controle: um espelho d'água urbano, sem rejeito, em que
+        o radar só pode estar vendo água. Ela mostra quanto o método erra quando a premissa vale. A Eustáquio
+        mostra o que acontece quando a premissa não vale.</p>
+      <div class="contraste">
+        <div>
+          <span class="selo selo-controle">Controle</span>
+          <h3>Lagoa da Pampulha</h3>
+          <p>Contra o Sentinel-2, viés de <b>{{ pamp.vies_medio_pct|num(1, true) }}%</b> e erro médio de
+            <b>{{ pamp.erro_medio_abs_pct|num(1) }}%</b> em {{ pamp.n_validas }} datas. O S1 mede um pouco menos
+            que o S2, de forma estável: o limite de −15 dB corta as bordas do lago.</p>
+        </div>
+        <div>
+          <span class="selo selo-monitorada">Monitorada</span>
+          <h3>Barragem Eustáquio</h3>
+          <p>Viés de <b>{{ eust.vies_medio_pct|num(1, true) }}%</b> ({{ eust.vies_medio_ha|num(0, true) }} ha) em
+            {{ eust.n_validas }} datas. O rejeito saturado é liso como a água e também fica escuro no radar, então
+            entra na "superfície escura". Por isso, nas barragens de rejeito, o lago vem do Sentinel-2 e os
+            alertas usam a série S2.</p>
+        </div>
+      </div>
+    </section>
+
+    {% set t = metodologia.get('sensibilidade_limiar') %}
+    <section id="sensibilidade" aria-labelledby="h-sensibilidade">
+      <h2 id="h-sensibilidade">Sensibilidade do limiar</h2>
+      {% if t %}
+      <p>{{ t.descricao }}</p>
+      <div class="tabela-quadro">
+      <table>
+        <thead><tr>{% for c in t.colunas %}<th{% if not loop.first %} class="num"{% endif %}>{{ c }}</th>{% endfor %}</tr></thead>
+        <tbody>{% for linha in t.linhas %}
+          <tr{% if loop.first %} style="font-weight:600"{% endif %}><td>{{ linha[0] }}</td>{% for v in linha[1:] %}<td class="num">{{ v }}</td>{% endfor %}</tr>
+        {% endfor %}</tbody>
+      </table>
+      </div>
+      {% for p in t.conclusao %}<p>{{ p }}</p>{% endfor %}
+      {% endif %}
+    </section>
+
+    <section id="limitacoes" aria-labelledby="h-limitacoes">
+      <h2 id="h-limitacoes">Limitações demonstradas</h2>
+      <p>Observadas nos próprios dados deste monitoramento, não em literatura.</p>
+      {% for titulo, l in limitacoes.items() %}
+        <h3>{{ titulo }}</h3>
+        <p>{{ l.texto }}</p>
+        <p class="dica">Registrada em: {{ l.estruturas|join(", ") }}.</p>
+      {% endfor %}
+    </section>
+
+    <section id="cobertura" aria-labelledby="h-cobertura">
+      <h2 id="h-cobertura">Lacuna de cobertura em Paracatu</h2>
+      <p>A série de Paracatu começa em abril de 2025 porque, antes disso, nenhum satélite Sentinel-1 imageava
+        a região na órbita disponível. O catálogo foi conferido nas coleções GRD e RTC.</p>
+      <div class="tabela-quadro">
+      <table>
+        <thead><tr><th>Período</th><th>Satélite</th><th>Passagens</th></tr></thead>
+        <tbody>
+          <tr><td>até dez/2021</td><td>Sentinel-1B</td><td>a cada 12 dias (28 datas em 2021)</td></tr>
+          <tr><td>jan/2022 a mar/2025</td><td>nenhum</td><td>o Sentinel-1B parou em dez/2021 e o Sentinel-1A não cobria a região</td></tr>
+          <tr><td>a partir de abr/2025</td><td>Sentinel-1C</td><td>a cada 12 dias, órbita descendente 126</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+
+    <section id="creditos" aria-labelledby="h-creditos">
+      <h2 id="h-creditos">Créditos e atribuições</h2>
+      <ul class="creditos">
+        <li><b>Copernicus / ESA:</b> contém dados Copernicus Sentinel-1 e Sentinel-2 modificados (2023–2026).</li>
+        <li><b>Microsoft Planetary Computer:</b> acesso às coleções Sentinel-1 RTC, Sentinel-2 L2A e Copernicus DEM.</li>
+        <li><b>ANM – SIGBM:</b> coordenadas, categoria de risco e dano potencial das barragens (consulta pública).</li>
+        <li><b>Esri:</b> mapa de satélite World Imagery (Esri, Maxar, Earthstar Geographics e comunidade GIS).</li>
+        <li><b>OpenStreetMap:</b> mapa base © colaboradores do OpenStreetMap (licença ODbL).</li>
+        <li><b>Software:</b> Leaflet (BSD-2), Chart.js (MIT), fontes IBM Plex Sans e Barlow Semi Condensed (SIL OFL).</li>
+      </ul>
+    </section>
+  </article>
+</div>
+{% endblock %}
